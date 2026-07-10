@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Command Center | Nexus RAG</title>
+    <link rel="stylesheet" href="/styles.css" />
+    
+     <script>
+      (function () {
+        const token = localStorage.getItem('nexus_token');
+        const role = localStorage.getItem('nexus_role');
+        const userId = localStorage.getItem('pdf-rag-user-id'); // Get unique user ID
+        
+        // 1. Security Check
+        const currentPath = window.location.pathname;
+        if (!token) {
+          if (!currentPath.includes('login.html')) window.location.replace('/login.html');
+        } else if (role === 'admin' && !currentPath.includes('admin.html')) {
+          window.location.replace('/admin.html'); 
+        } else if (role !== 'admin' && currentPath.includes('admin.html')) {
+          window.location.replace('/'); 
+        }
+
+        // 2. PER-USER THEME CHECK
+        if (userId) {
+          const userTheme = localStorage.getItem(`nexus_theme_${userId}`) || 'dark';
+          document.documentElement.setAttribute('data-theme', userTheme);
+        }
+      })();
+    </script>
+
+    <style>
+      /* --- MODAL STYLES --- */
+      .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+        display: none; align-items: center; justify-content: center; z-index: 1000;
+      }
+      .modal-content {
+        width: 90%; max-width: 600px; max-height: 80vh;
+        background: var(--bg-surface); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 24px; display: flex; flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      }
+      .modal-header {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 16px;
+      }
+      .modal-body {
+        overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; padding-right: 8px;
+      }
+      .audit-card {
+        background: var(--bg-hover); padding: 12px 16px;
+        border-radius: 8px; border: 1px solid var(--border-color);
+      }
+      .audit-card strong { font-size: 14px; display: block; color: var(--text-main); margin-bottom: 4px; }
+      .audit-card small { font-size: 11px; color: var(--text-muted); }
+
+      /* --- RESPONSIVE LAYOUT CLASSES (Replaced Inline Styles) --- */
+      .admin-workspace {
+        padding: 32px; 
+        overflow-y: auto; 
+        display: block;
+        flex: 1;
+      }
+      .roster-panel {
+        grid-column: span 2;
+      }
+
+      /* --- MOBILE & TABLET RESPONSIVENESS --- */
+      @media (max-width: 1024px) {
+        .admin-grid {
+          grid-template-columns: 1fr !important; /* Stack forms and tables */
+          gap: 20px;
+        }
+        .roster-panel {
+          grid-column: span 1 !important; /* Prevent table from breaking out */
+        }
+      }
+
+      @media (max-width: 768px) {
+        .admin-workspace {
+          padding: 16px !important; /* Less padding on small screens */
+        }
+        .top-nav {
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .admin-card {
+          padding: 20px 16px !important;
+        }
+        .table-container {
+          width: 100%;
+          overflow-x: auto !important; /* Horizontal scroll for the table */
+          -webkit-overflow-scrolling: touch;
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+        }
+        .admin-table th, .admin-table td {
+          white-space: nowrap !important; /* Don't squish text */
+          padding: 12px 16px;
+        }
+        .modal-content {
+          width: 95%;
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      
+      <nav class="top-nav" style="border-bottom-color: var(--accent-primary);">
+        <div class="brand">
+          <div class="logo-mark" style="background: #10b981;"> 
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <div class="brand-text">
+            <strong>Admin Dashboard</strong>
+            <span id="adminEmailDisplay">Nexus RAG Security</span>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 16px; align-items: center;">
+          <button id="themeToggle" class="icon-btn" aria-label="Toggle Theme">
+            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button id="logoutBtn" class="outline-btn" style="padding: 6px 16px; border-color: #ef4444; color: #ef4444; font-size: 13px; font-weight: 600;">
+            Logout
+          </button>
+        </div>
+      </nav>
+
+      <div id="activityModal" class="modal-overlay">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div>
+              <h2 class="section-title" style="margin-bottom: 4px; font-size: 16px;">Audit Log: Employee Activity</h2>
+              <p id="modalEmail" style="font-size: 13px; color: var(--text-muted);">fetching...</p>
+            </div>
+            <button id="closeModalBtn" class="outline-btn" style="padding: 6px 12px; border-color: #ef4444; color: #ef4444; font-size: 12px;">Close</button>
+          </div>
+          <div id="activityContent" class="modal-body">
+            </div>
+        </div>
+      </div>
+
+      <main class="admin-workspace">
+        <div class="admin-grid">
+          
+          <div class="admin-card">
+            <h2 class="section-title" style="font-size: 14px; margin-bottom: 24px;">Provision New Employee</h2>
+            <form id="createUserForm" class="auth-form">
+              <div id="adminMsgBox" class="auth-error" style="display: none; background: rgba(16,185,129,0.1); color: #10b981; border-color: #10b981;"></div>
+              
+              <div class="input-group">
+                <label>Employee Email</label>
+                <input type="email" id="newEmail" placeholder="name@company.com" required />
+              </div>
+              <div class="input-group">
+                <label>Temporary Password</label>
+                <input type="text" id="newPassword" placeholder="e.g. Nexus@2026" required minlength="6" />
+              </div>
+              
+              <button type="submit" id="createUserBtn" class="primary-btn full-width" style="margin-top: 10px;">
+                Create Account
+              </button>
+            </form>
+          </div>
+
+          <div class="admin-card roster-panel">
+            <h2 class="section-title" style="font-size: 14px; margin-bottom: 24px;">Active Employee Roster</h2>
+            
+            <div class="table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>System ID</th>
+                    <th>Email Address</th>
+                    <th>Role</th>
+                    <th>Joined Date</th>
+                    <th>Actions</th> 
+                  </tr>
+                </thead>
+                <tbody id="employeeTableBody">
+                  <tr><td colspan="5" style="text-align:center;">Loading employees...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+
+    <script>
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.clear();
+        window.location.replace('/login.html');
+      });
+    </script>
+
+    <script src="/admin.js"></script>
+  </body>
+</html>
