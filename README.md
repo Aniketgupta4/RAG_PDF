@@ -73,8 +73,10 @@ This is a **full-stack multi-tenant AI knowledge assistant** designed to securel
 
 ## 💻 Setup & Usage
 
-### 1️⃣ Clone the repo
+
 ```bash
+
+1️⃣ Clone the repo
 git clone [https://github.com/Aniketgupta4/RAG_PDF.git](https://github.com/Aniketgupta4/RAG_PDF.git)
 cd RAG_PDF
 npm install
