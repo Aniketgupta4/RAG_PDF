@@ -71,10 +71,27 @@ This is a **full-stack multi-tenant AI knowledge assistant** designed to securel
 
 ---
 
-## 💻 Setup & Usage
+💻 Setup & Usage
 
-### 1️⃣ Clone the repo
-```bash
-git clone [https://github.com/Aniketgupta4/RAG_PDF.git](https://github.com/Aniketgupta4/RAG_PDF.git)
+1️⃣ Clone the repo
+Bash
+git clone https://github.com/Aniketgupta4/RAG_PDF.git
 cd RAG_PDF
 npm install
+
+2️⃣ Configure Environment Variables
+Create a .env file in the root directory and add:
+
+Code snippet
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+GEMINI_CHAT_MODEL=gemini-2.5-flash
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_INDEX_NAME=your_pinecone_index_name
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+PORT=3000
+
+3️⃣ Run the Application
+Bash
+node server.js
