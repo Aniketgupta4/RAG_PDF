@@ -1,4 +1,4 @@
-# 📄 RAG SYSTEM - Enterprise AI Knowledge Assistant
+# 📄 Nexus RAG - Enterprise AI Knowledge Assistant
 
 ![MongoDB](https://img.shields.io/badge/MongoDB-green?logo=mongodb&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-black?logo=express&logoColor=white)
@@ -71,16 +71,16 @@ This is a **full-stack multi-tenant AI knowledge assistant** designed to securel
 
 ---
 
-💻 Setup & Usage
+## 💻 Setup & Usage
 
-1️⃣ Clone the repo
-Bash
-git clone https://github.com/Aniketgupta4/RAG_PDF.git
+### 1️⃣ Clone the repo
+```bash
+git clone [https://github.com/Aniketgupta4/RAG_PDF.git](https://github.com/Aniketgupta4/RAG_PDF.git)
 cd RAG_PDF
 npm install
 
 2️⃣ Configure Environment Variables
-Create a .env file in the root directory and add:
+Create a .env file in the root directory and add your credentials:
 
 Code snippet
 GEMINI_API_KEY=your_gemini_api_key
