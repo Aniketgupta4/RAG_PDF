@@ -1,4 +1,4 @@
-# 📄 Nexus RAG - Enterprise AI Knowledge Assistant
+# 📄 RAG SYSTEM - Enterprise AI Knowledge Assistant
 
 ![MongoDB](https://img.shields.io/badge/MongoDB-green?logo=mongodb&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-black?logo=express&logoColor=white)
