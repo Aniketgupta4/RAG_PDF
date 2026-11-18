@@ -2,30 +2,20 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     
-     <script>
+    <script>
       (function () {
         const token = localStorage.getItem('nexus_token');
         const role = localStorage.getItem('nexus_role');
-        const userId = localStorage.getItem('pdf-rag-user-id'); // Get unique user ID
+        const userId = localStorage.getItem('pdf-rag-user-id');
         
-        // 1. Security Check
-        const currentPath = window.location.pathname;
-        if (!token) {
-          if (!currentPath.includes('login.html')) window.location.replace('/login.html');
-        } else if (role === 'admin' && !currentPath.includes('admin.html')) {
-          window.location.replace('/admin.html'); 
-        } else if (role !== 'admin' && currentPath.includes('admin.html')) {
-          window.location.replace('/'); 
+        if (!token || !userId) {
+          window.location.replace('/login');
         }
 
-        // 2. PER-USER THEME CHECK (Runs before page renders to stop flashing)
-        if (userId) {
-          // Check if this specific user has a theme saved, default to dark
-          const userTheme = localStorage.getItem(`nexus_theme_${userId}`) || 'dark';
-          document.documentElement.setAttribute('data-theme', userTheme);
-        }
+        const userTheme = localStorage.getItem(`nexus_theme_${userId}`) || localStorage.getItem('nexus_global_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', userTheme);
       })();
     </script>
 
@@ -33,205 +23,366 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <title>Enterprise RAG | AI Knowledge Assistant</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <style>
-      /* --- MOBILE RESPONSIVENESS FOR CHAT UI --- */
-      @media (max-width: 992px) {
-        .workspace {
-          display: flex !important;
-          flex-direction: column !important;
-          overflow-y: auto !important;
-          height: auto !important;
-        }
-
-        /* 1. UPLOAD PANEL - Forced to Top */
-        .sidebar {
-          display: flex !important;
-          flex-direction: column !important;
-          width: 100% !important;
-          max-width: 100% !important;
-          order: 1 !important; /* Moves to Top */
-          border-left: none !important;
-          border-bottom: 4px solid var(--bg-app) !important;
-          padding: 20px 16px !important;
-          min-height: max-content !important; /* PREVENTS COLLAPSING */
-        }
-
-        /* 🔥 CRITICAL FIX: ZABARDASTI UN-HIDE UPLOAD BOX 🔥 */
-        .sidebar-section,
-        .upload-box, 
-        .file-drop-area {
-          display: flex !important;
-          flex-direction: column !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-          height: auto !important;
-          min-height: 120px !important; /* Force space for drag & drop box */
-        }
-        
-        .upload-box {
-          margin-top: 10px !important;
-        }
-
-        /* 2. MAIN CHAT PANEL - Middle */
-        .chat-panel {
-          display: flex !important;
-          flex-direction: column !important;
-          width: 100% !important;
-          order: 2 !important;
-          min-height: 75vh !important; /* Keeps chat area large */
-        }
-
-        /* 3. HISTORY PANEL - Bottom */
-        .history-sidebar {
-          display: flex !important;
-          flex-direction: column !important;
-          width: 100% !important;
-          max-width: 100% !important;
-          order: 3 !important; /* Moves to Bottom */
-          border-right: none !important;
-          border-top: 4px solid var(--bg-app) !important;
-          padding: 20px 16px !important;
-        }
-        
-        .chat-list {
-          max-height: 250px !important;
-          overflow-y: auto !important;
-        }
-        
-        /* Mobile Typography Tweaks */
-        .header-titles h1 { font-size: 18px !important; }
-        .header-titles p { font-size: 12px !important; }
-        .section-title { font-size: 14px !important; margin-bottom: 8px !important; }
-      }
-    </style>
+    
+    <title>NexusAI | Enterprise Knowledge Assistant Workspace</title>
+    <link rel="stylesheet" href="/styles.css?v=20261118_v8" />
   </head>
   <body>
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <div class="app-container">
+      
+      <!-- Top Enterprise Navigation Bar -->
       <nav class="top-nav">
-        <div class="brand">
+        <div class="brand" onclick="window.location.href='/'" style="cursor: pointer;">
           <div class="logo-mark">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>
+            </svg>
           </div>
           <div class="brand-text">
-            <strong>RAG</strong>
-            <span>A.A EnterPrice</span>
+            <strong>NexusAI</strong>
+            <span>Enterprise Workspace</span>
           </div>
         </div>
-        
-        <div style="display: flex; gap: 16px; align-items: center;">
-          <button id="themeToggle" class="icon-btn" aria-label="Toggle Theme">
-            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <!-- Quick Command Palette Button -->
+          <button id="cmdPaletteBtn" class="outline-btn" style="padding: 5px 10px; font-size: 11px; gap: 4px; display: none;" title="Open Command Palette (Ctrl+K)">
+            <span>⌘K</span>
+          </button>
+
+          <div id="adminNavBtn" style="display: none;">
+            <a href="/admin" class="outline-btn" style="padding: 5px 10px; font-size: 12px; border-color: var(--accent-primary); color: var(--accent-secondary);">
+              Admin Console
+            </a>
+          </div>
+
+          <button id="themeToggle" class="icon-btn" aria-label="Toggle Theme" title="Toggle Theme">
+            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
             </svg>
           </button>
           
-          <button id="logoutBtn" class="outline-btn" style="padding: 6px 16px; border-color: #ef4444; color: #ef4444; font-size: 13px; font-weight: 600;">
-            Logout
+          <button id="logoutBtn" class="outline-btn" style="padding: 5px 12px; border-color: rgba(239, 68, 68, 0.4); color: var(--status-error); font-size: 12px; font-weight: 600;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Exit</span>
           </button>
         </div>
       </nav>
 
+      <!-- 3-Pane Workspace (Responsive Desktop Grid & Mobile Tab Switching) -->
       <main class="workspace">
         
-        <aside class="history-sidebar">
+        <!-- PANE 1: SESSIONS & CONVERSATION HISTORY -->
+        <aside class="history-sidebar mobile-tab-view" id="mobileHistoryTab">
           <div class="history-header">
-            <button id="newChatBtn" class="primary-btn outline-btn full-width">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              New Conversation
+            <button id="newChatBtn" class="primary-btn" style="width: 100%; padding: 9px 14px; font-size: 13px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>New Intelligence Session</span>
             </button>
+            <input type="text" id="historySearchInput" placeholder="Filter conversations..." class="history-search-input" />
           </div>
           
           <div class="chat-list" id="chatHistoryList">
-            <div class="history-label">Recent Chats</div>
+            <div class="history-label">Recent Sessions</div>
+            <div id="chatsLoadingIndicator" style="padding: 12px; font-size: 12px; color: var(--text-muted);">Loading session history...</div>
+          </div>
+
+          <!-- User Profile Footer -->
+          <div class="user-profile-strip">
+            <div class="user-info-group">
+              <div class="user-avatar" id="userAvatarText">U</div>
+              <div class="user-details">
+                <span class="user-name-text" id="userNameDisplay">Knowledge Worker</span>
+                <span class="user-role-badge" id="userRoleDisplay">Analyst</span>
+              </div>
             </div>
+            <div class="badge badge-success" style="font-size: 10px; padding: 2px 6px;">Online</div>
+          </div>
         </aside>
 
-        <section class="chat-panel">
+        <!-- PANE 2: GROUNDED QUERY & STREAMING INTERFACE -->
+        <section class="chat-panel mobile-tab-view active-tab" id="mobileChatTab">
           <header class="chat-header">
             <div class="header-titles">
-              <h1>Contextual Query Interface</h1>
-              <p>Grounded responses powered by Gemini & Pinecone</p>
+              <h1>
+                <span>Query Interface</span>
+                <span id="activeDocChip" class="active-doc-chip" style="display: none;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  <span id="activeDocChipName">Doc.pdf</span>
+                </span>
+              </h1>
+              <p>Grounded zero-hallucination inference via Google Gemini & Pinecone Vector Engine</p>
             </div>
             
-            <div style="display: flex; gap: 12px; align-items: center;">
-              <button id="exportChatBtn" class="outline-btn" style="padding: 6px 12px; font-size: 12px; gap: 6px; border-radius: 6px;" title="Download Conversation as TXT">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                Export Chat
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <!-- Instant Executive Summary Generator -->
+              <button id="docSummaryBtn" class="outline-btn" style="padding: 5px 10px; font-size: 12px; gap: 4px;" title="Generate Executive Briefing of Active Document">
+                <span>📋 Auto Briefing</span>
               </button>
+
+              <!-- Export Options Menu -->
+              <div style="position: relative; display: inline-block;">
+                <button id="exportDropdownBtn" class="outline-btn" style="padding: 5px 10px; font-size: 12px; gap: 4px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Export</span>
+                </button>
+                <div id="exportMenu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--shadow-lg); z-index: 100; min-width: 140px; overflow: hidden;">
+                  <button onclick="exportAuditPDF()" style="width: 100%; text-align: left; background: none; border: none; padding: 9px 12px; font-size: 12.5px; color: var(--text-main); cursor: pointer;">📄 Export as PDF</button>
+                  <button onclick="exportMarkdown()" style="width: 100%; text-align: left; background: none; border: none; padding: 9px 12px; font-size: 12.5px; color: var(--text-main); cursor: pointer;">📝 Export as Markdown</button>
+                  <button onclick="exportPlainText()" style="width: 100%; text-align: left; background: none; border: none; padding: 9px 12px; font-size: 12.5px; color: var(--text-main); cursor: pointer;">📑 Export as TXT</button>
+                </div>
+              </div>
               
-              <div class="status-badge">
-                <div class="live-dot"></div>
-                <span>System Online</span>
+              <!-- Telemetry Badge -->
+              <div id="latencyBadge" class="badge badge-primary" style="font-size: 10.5px;">
+                <span class="live-indicator"></span>
+                <span id="latencyValue">Grounded</span>
               </div>
             </div>
           </header>
 
           <div id="messages" class="messages-container">
             <div class="message assistant">
-              <strong>System initialized.</strong> Upload a PDF document in the right sidebar to begin the embedding process, or select a previous conversation from the left menu.
+              <strong>Enterprise Intelligence Agent Initialized.</strong><br/>
+              Select a document from your <strong>Document Library</strong> in the right sidebar or upload a new corporate PDF to generate vector embeddings. You can also toggle <strong>"Query All Documents"</strong> for cross-document synthesis. All responses are mathematically bounded by context.
             </div>
           </div>
 
           <div class="input-area">
+            <!-- Prompt Suggestions -->
+            <div class="prompt-suggestions">
+              <button class="suggestion-chip" onclick="applySuggestion('Provide an executive summary of this document.')">📋 Executive Summary</button>
+              <button class="suggestion-chip" onclick="applySuggestion('Extract key operational and financial metrics.')">📊 Financial Metrics</button>
+              <button class="suggestion-chip" onclick="applySuggestion('What are the primary risk factors and liabilities mentioned?')">⚠️ Risk & Liability Analysis</button>
+              <button class="suggestion-chip" onclick="applySuggestion('List all action items and milestones.')">🎯 Action Items</button>
+            </div>
+
             <form id="askForm" class="ask-bar">
               <input
                 id="questionInput"
                 type="text"
-                placeholder="Query the active document context..."
+                placeholder="Ask anything about the active document context (or press Mic to speak)..."
                 autocomplete="off"
                 required
               />
-              <button type="submit" class="primary-btn execute-btn" title="Send Query">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+
+              <!-- Voice Input Microphone Button -->
+              <button type="button" id="voiceInputBtn" class="mic-btn" title="Speak Query (Speech to Text)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="22"></line>
+                </svg>
+              </button>
+
+              <button type="submit" id="submitAskBtn" class="execute-btn" title="Execute Grounded Query">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
               </button>
             </form>
+
             <footer class="mini-footer">
-             • Created by Aniket Gupta • Secure Enterprise Environment • Responses may occasionally contain inaccuracies.
+              NexusAI v3.5 Enterprise Grounded Inference • Mathematical zero-hallucination constraint • Zero LLM training on corporate data
             </footer>
           </div>
         </section>
 
-        <aside class="sidebar">
-          <div class="sidebar-section">
-            <h2 class="section-title">Knowledge Ingestion</h2>
-            <form id="uploadForm" class="upload-box">
-              
+        <!-- PANE 3: KNOWLEDGE INGESTION & DOCUMENT LIBRARY -->
+        <aside class="sidebar mobile-tab-view" id="mobileLibraryTab">
+          
+          <!-- Knowledge Scope Switcher (Company vs Personal) -->
+          <div class="scope-switch-container">
+            <button id="scopeCompanyBtn" class="scope-btn active" onclick="switchKnowledgeScope('company')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="22.01"></line><line x1="15" y1="22" x2="15" y2="22.01"></line><line x1="9" y1="6" x2="9" y2="6.01"></line><line x1="15" y1="6" x2="15" y2="6.01"></line><line x1="9" y1="10" x2="9" y2="10.01"></line><line x1="15" y1="10" x2="15" y2="10.01"></line><line x1="9" y1="14" x2="9" y2="14.01"></line><line x1="15" y1="14" x2="15" y2="14.01"></line><line x1="9" y1="18" x2="9" y2="18.01"></line><line x1="15" y1="18" x2="15" y2="18.01"></line></svg>
+              <span>🏢 Company Base</span>
+            </button>
+            <button id="scopePersonalBtn" class="scope-btn" onclick="switchKnowledgeScope('personal')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+              <span>📁 Personal Docs</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Department Clearance Banner -->
+          <div id="deptClearanceNotice" class="dept-notice">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span id="deptClearanceText" style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--accent-secondary);">Department Clearance</span>
+              <span class="live-indicator"></span>
+            </div>
+            <p id="deptClearanceSub" style="font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">
+              Accessing certified policies for your department. Unpermitted department records are isolated.
+            </p>
+          </div>
+
+          <!-- Company Notice / Personal Ingestion Container -->
+          <div id="companyNoticeBox" class="company-kb-notice" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);">
+            <strong style="color: var(--text-main); display: block; margin-bottom: 2px;">🛡️ Enterprise Knowledge Governance</strong>
+            <span>Company policies are curated by compliance. Switch to 'Personal Docs' to upload and query your private PDFs.</span>
+          </div>
+
+          <!-- Personal Ingestion Drop Box (Shown in Personal Mode) -->
+          <div id="personalUploadBox" style="display: none;">
+            <h2 class="section-title">
+              <span>Personal PDF Ingestion</span>
+              <span class="badge" style="font-size: 10px;">Private Sandbox</span>
+            </h2>
+
+            <form id="uploadForm">
               <div class="file-drop-area">
                 <input id="pdfInput" name="pdf" type="file" accept="application/pdf" required />
                 <label for="pdfInput" class="file-label">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-                  <span id="fileNameDisplay">Click to browse or drag PDF</span>
-                  <small>Max file size: 8MB</small>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="upload-icon">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                  </svg>
+                  <span id="fileNameDisplay">Click or drag private PDF</span>
+                  <small>Isolated personal vector namespace</small>
                 </label>
               </div>
 
-              <button type="submit" class="primary-btn full-width">Generate Vector Index</button>
+              <button type="submit" id="uploadSubmitBtn" class="primary-btn" style="width: 100%; margin-top: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path><polyline points="16 16 12 12 8 16"></polyline></svg>
+                <span>Index into Personal Space</span>
+              </button>
             </form>
           </div>
 
-          <div class="sidebar-section">
-            <h2 class="section-title">System Telemetry</h2>
-            <div class="meta-card">
-              <span class="meta-label">Pipeline Status</span>
-              <strong id="statusText" class="status-indicator">Awaiting Data</strong>
+          <!-- Document Library Section with Multi-Doc Mode Toggle -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h2 class="section-title" style="margin: 0;">
+                <span id="libraryTitleText">Company Knowledge</span>
+                <span id="docCountBadge" class="badge badge-primary" style="font-size: 10px; margin-left: 6px;">0 Docs</span>
+              </h2>
+
+              <!-- Cross-Document RAG Toggle -->
+              <button id="toggleAllDocsBtn" class="outline-btn" style="padding: 3px 8px; font-size: 10.5px;" onclick="toggleQueryAllDocs()">
+                🌐 Query All Docs
+              </button>
             </div>
-            <div class="meta-card">
-              <span class="meta-label">Active Context</span>
-              <strong id="documentText" class="text-truncate">None</strong>
+
+            <div class="doc-library-list" id="docLibraryList">
+              <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 14px;">
+                Loading documents...
+              </div>
             </div>
           </div>
+
+          <!-- Real-Time System Telemetry -->
+          <div>
+            <h2 class="section-title">System Telemetry</h2>
+            
+            <div class="meta-card">
+              <span class="meta-label">Pipeline Status</span>
+              <strong id="statusText" style="color: var(--text-muted);">Awaiting Document</strong>
+            </div>
+
+            <div class="meta-card">
+              <span class="meta-label">Active Context</span>
+              <div class="doc-title-row">
+                <strong id="documentText" class="text-truncate">None Selected</strong>
+              </div>
+            </div>
+
+            <div class="meta-card">
+              <span class="meta-label">Vector Space Isolation</span>
+              <strong id="namespaceText" style="font-size: 11.5px; font-family: var(--font-mono); color: var(--accent-secondary);">Checking...</strong>
+            </div>
+          </div>
+
         </aside>
       </main>
+
+      <!-- MOBILE BOTTOM NAVIGATION BAR -->
+      <nav class="mobile-bottom-nav">
+        <button class="mobile-tab-btn" onclick="switchMobileTab('mobileHistoryTab', this)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span>Sessions</span>
+        </button>
+
+        <button class="mobile-tab-btn active" onclick="switchMobileTab('mobileChatTab', this)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>Chat</span>
+        </button>
+
+        <button class="mobile-tab-btn" onclick="switchMobileTab('mobileLibraryTab', this)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <span>Library</span>
+        </button>
+      </nav>
     </div>
 
-    <script>
-      document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.clear(); // Clear all auth tokens and data
-        window.location.replace('/login.html'); // Redirect safely
-      });
-    </script>
+    <!-- Citation Source Inspection Modal -->
+    <div id="citationModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-main);">Source Citation Evidence</h3>
+            <p id="citationModalMeta" style="font-size: 11.5px; color: var(--accent-secondary); margin-top: 2px;">Document Chunk Details</p>
+          </div>
+          <button id="closeCitationModal" class="icon-btn" style="border: none;">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between;">
+            <span>Extracted Vector Text Chunk</span>
+            <button id="copyCitationBtn" class="outline-btn" style="padding: 2px 8px; font-size: 11px;">Copy Chunk</button>
+          </div>
+          <div id="citationModalContent" style="background: var(--bg-surface-elevated); padding: 14px; border-radius: 8px; font-size: 13.5px; line-height: 1.6; border: 1px solid var(--border-color); color: var(--text-main); font-family: var(--font-mono); max-height: 300px; overflow-y: auto;">
+            Chunk content...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Executive Briefing Modal -->
+    <div id="briefingModal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 720px;">
+        <div class="modal-header">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Executive Document Briefing</h3>
+            <p id="briefingDocTitle" style="font-size: 12px; color: var(--accent-secondary); margin-top: 2px;">Auto-generated comprehensive intelligence</p>
+          </div>
+          <button id="closeBriefingModal" class="icon-btn" style="border: none;">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="briefingContent" class="markdown-body" style="font-size: 14px; line-height: 1.65; color: var(--text-main);">
+            Analyzing document context...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Palette (Ctrl+K) Modal -->
+    <div id="cmdPaletteOverlay" class="command-palette-overlay">
+      <div class="command-palette-card">
+        <input type="text" id="cmdPaletteInput" placeholder="Type a command or search documents (e.g. 'summary', 'new', 'dark')..." class="command-palette-input" />
+        <div class="command-palette-list" id="cmdPaletteList">
+          <div class="command-palette-item" onclick="triggerCmd('newChat')">
+            <span>➕ Start New Intelligence Session</span>
+            <span class="badge" style="font-size: 10px;">Action</span>
+          </div>
+          <div class="command-palette-item" onclick="triggerCmd('briefing')">
+            <span>📋 Generate Executive Briefing</span>
+            <span class="badge" style="font-size: 10px;">Analysis</span>
+          </div>
+          <div class="command-palette-item" onclick="triggerCmd('queryAll')">
+            <span>🌐 Toggle 'Query All Documents' Mode</span>
+            <span class="badge" style="font-size: 10px;">Toggle</span>
+          </div>
+          <div class="command-palette-item" onclick="triggerCmd('export')">
+            <span>📄 Export Conversation as PDF</span>
+            <span class="badge" style="font-size: 10px;">Export</span>
+          </div>
+          <div class="command-palette-item" onclick="triggerCmd('theme')">
+            <span>🌓 Toggle Dark / Light Theme</span>
+            <span class="badge" style="font-size: 10px;">Appearance</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="/app.js"></script>
   </body>
